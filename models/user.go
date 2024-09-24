@@ -6,3 +6,9 @@ type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type ResponseUser struct {
+	id    string
+	name  string
+	email string
+}

@@ -21,7 +21,7 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	// Input check.
-	if user.Email == "" || user.Name == "" || user.Password == "" {
+	if user.Email == "" || user.Name == "" /*|| user.Password == "" */ {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Missing required fields",
 		})
@@ -37,6 +37,7 @@ func CreateUser(c *fiber.Ctx) error {
 			"error": "Failed to hash password",
 		})
 	}
+
 	user.Password = string(hashedPassword)
 
 	// Email verification.
@@ -98,6 +99,7 @@ func ReadUser(c *fiber.Ctx) error {
 		return json.Unmarshal([]byte(val), &user)
 	})
 
+	// Error handling.
 	if err != nil {
 		if err == buntdb.ErrNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -175,7 +177,7 @@ func SearchUsers(c *fiber.Ctx) error {
 	}
 
 	if len(users) == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		return c.Status(fiber.StatusNoContent).JSON(fiber.Map{
 			"message": "No users found matching the criteria",
 		})
 	}
