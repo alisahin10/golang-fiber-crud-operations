@@ -1,0 +1,47 @@
+*3
+$3
+set
+$36
+76dfa3ab-d1a8-4eb5-8ac4-413d051154f0
+$168
+{"id":"76dfa3ab-d1a8-4eb5-8ac4-413d051154f0","name":"Ali Şahin","email":"alisahin@gmail.com","password":"$2a$10$IOfaejKWM4SFITmiUeLVFeBFcZ/rLYSyqp6KwbVjukarnVAyDgquy"}
+*3
+$3
+set
+$36
+2de222c6-23f9-4bb9-9218-49f2450fa15e
+$176
+{"id":"2de222c6-23f9-4bb9-9218-49f2450fa15e","name":"Ertuğrul Acar","email":"ertugrulacar@gmail.com","password":"$2a$10$c/947Z.wZvtOdsqxL7DQIu/v5Zs/P.j5he4XP1aMILBj8I7NDop46"}
+*3
+$3
+set
+$36
+36ca29af-93e7-4a4a-b12c-c75f19abadd2
+$178
+{"id":"36ca29af-93e7-4a4a-b12c-c75f19abadd2","name":"Eraycan Uyanık","email":"eraycanuyanik@gmail.com","password":"$2a$10$tNc268dbw9pCW5Q0sgKH0uM3sW8Bxc0fW365mNaXBuMRUL5pjaela"}
+*3
+$3
+set
+$36
+76dfa3ab-d1a8-4eb5-8ac4-413d051154f0
+$169
+{"id":"76dfa3ab-d1a8-4eb5-8ac4-413d051154f0","name":"Aly Falcon","email":"alyfalcon@gmail.com","password":"$2a$10$Bbj77BUADJideJPUd0jLVubKAGTxrznZS2U4CI/h.zlQWmwwOgVdS"}
+*2
+$3
+del
+$36
+76dfa3ab-d1a8-4eb5-8ac4-413d051154f0
+*3
+$3
+set
+$36
+4189d64f-22d4-478a-853f-055f1da5e8f8
+$168
+{"id":"4189d64f-22d4-478a-853f-055f1da5e8f8","name":"Ali Şahin","email":"alisahin@gmail.com","password":"$2a$10$48INprdn3j9Af93ST2gqn.jwSob1Eqf8ChOFdZ.bJCqQsCzz0OlEy"}
+*3
+$3
+set
+$36
+e93ab24e-36b8-4ab8-b626-0baa3af9f43e
+$165
+{"id":"e93ab24e-36b8-4ab8-b626-0baa3af9f43e","name":"John Doe","email":"johndoe@gmail.com","password":"$2a$10$DsKfl/O/wtx0RiyvFc8U5O2CVOWvPYlOFwlezApRNlVYdM6kDGvWa"}
