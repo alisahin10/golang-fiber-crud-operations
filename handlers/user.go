@@ -7,21 +7,31 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/tidwall/buntdb"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
 )
+
+var logger *zap.Logger
+
+func SetLogger(l *zap.Logger) {
+	logger = l
+}
 
 // CreateUser handler creates a new user.
 func CreateUser(c *fiber.Ctx) error {
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
+		logger.Error("Failed to parse body", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
+	logger.Info("Creating new user...", zap.String("email", user.Email))
+
 	// Input check.
-	if user.Email == "" || user.Name == "" /*|| user.Password == "" */ {
+	if user.Email == "" || user.Name == "" || user.Password == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Missing required fields",
 		})
@@ -82,14 +92,24 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(user)
+	// User response to hide password from client side.
+	responseUser := models.ResponseUser{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
+	logger.Info("User created successfully", zap.String("user_id", user.ID))
+	return c.Status(fiber.StatusCreated).JSON(responseUser)
 }
 
-// ReadUser handler display the user with related ID.
+// ReadUser handler displays the user with the related ID.
 func ReadUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	var user models.User
+
+	logger.Info("Reading user", zap.String("user_id", id))
 
 	err := database.DB.View(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(id)
@@ -102,46 +122,66 @@ func ReadUser(c *fiber.Ctx) error {
 	// Error handling.
 	if err != nil {
 		if err == buntdb.ErrNotFound {
+			logger.Warn("User not found", zap.String("user_id", id))
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "User not found",
 			})
 		}
+		logger.Error("Failed to retrieve user", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.JSON(user)
+	// User response to hide password from client side.
+	responseUser := models.ResponseUser{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
+	logger.Info("User retrieved successfully", zap.String("user_id", user.ID))
+	return c.JSON(responseUser)
 }
 
+// GetAllUsers handler retrieves all users.
 func GetAllUsers(c *fiber.Ctx) error {
-	var users []models.User
+	logger.Info("Retrieving all users")
+
+	var responseUsers []models.ResponseUser
 
 	err := database.DB.View(func(tx *buntdb.Tx) error {
 		return tx.Ascend("", func(key, value string) bool {
 			var user models.User
 			if err := json.Unmarshal([]byte(value), &user); err != nil {
-				// If error occurs, skip the user and continue.
 				return true
 			}
-			users = append(users, user)
+			responseUsers = append(responseUsers, models.ResponseUser{
+				ID:    user.ID,
+				Name:  user.Name,
+				Email: user.Email,
+			})
 			return true
 		})
 	})
 
 	if err != nil {
+		logger.Error("Failed to retrieve users", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve users",
 		})
 	}
 
-	return c.JSON(users)
+	logger.Info("Users retrieved successfully", zap.Int("count", len(responseUsers)))
+	return c.JSON(responseUsers)
 }
 
-// SearchUsers handler searches user according to name or email.
+// SearchUsers handler searches users according to name or email.
 func SearchUsers(c *fiber.Ctx) error {
 	nameQuery := c.Query("name")
 	emailQuery := c.Query("email")
+
+	logger.Info("Searching users", zap.String("name_query", nameQuery), zap.String("email_query", emailQuery))
 
 	if nameQuery == "" && emailQuery == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -149,21 +189,27 @@ func SearchUsers(c *fiber.Ctx) error {
 		})
 	}
 
-	var users []models.User
+	var responseUsers []models.ResponseUser
 
 	err := database.DB.View(func(tx *buntdb.Tx) error {
 		return tx.Ascend("", func(key, value string) bool {
 			var user models.User
 			if err := json.Unmarshal([]byte(value), &user); err != nil {
-				// If error occurs, skip the user and continue.
 				return true
 			}
 
-			// Filter with name or email.
 			if nameQuery != "" && strings.Contains(strings.ToLower(user.Name), strings.ToLower(nameQuery)) {
-				users = append(users, user)
+				responseUsers = append(responseUsers, models.ResponseUser{
+					ID:    user.ID,
+					Name:  user.Name,
+					Email: user.Email,
+				})
 			} else if emailQuery != "" && strings.Contains(strings.ToLower(user.Email), strings.ToLower(emailQuery)) {
-				users = append(users, user)
+				responseUsers = append(responseUsers, models.ResponseUser{
+					ID:    user.ID,
+					Name:  user.Name,
+					Email: user.Email,
+				})
 			}
 
 			return true
@@ -171,38 +217,43 @@ func SearchUsers(c *fiber.Ctx) error {
 	})
 
 	if err != nil {
+		logger.Error("Failed to search users", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to search users",
 		})
 	}
 
-	if len(users) == 0 {
+	if len(responseUsers) == 0 {
+		logger.Info("No users found matching the criteria", zap.String("name_query", nameQuery), zap.String("email_query", emailQuery))
 		return c.Status(fiber.StatusNoContent).JSON(fiber.Map{
 			"message": "No users found matching the criteria",
 		})
 	}
 
-	return c.JSON(users)
+	logger.Info("Users found", zap.Int("count", len(responseUsers)))
+	return c.JSON(responseUsers)
 }
 
-// UpdateUser handler update the users according to ID.
+// UpdateUser handler updates the user according to ID.
 func UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
+	logger.Info("Updating user", zap.String("user_id", id))
+
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
+		logger.Error("Failed to parse body", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
-	// Take the ID from parameter without touching email.
 	user.ID = id
 
-	// If password updated, then hashes it.
 	if user.Password != "" {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 		if err != nil {
+			logger.Error("Failed to hash password", zap.Error(err))
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to hash password",
 			})
@@ -213,13 +264,11 @@ func UpdateUser(c *fiber.Ctx) error {
 	var emailExists bool
 
 	err := database.DB.Update(func(tx *buntdb.Tx) error {
-		// Checks if user exist or not.
 		_, err := tx.Get(id)
 		if err != nil {
 			return err
 		}
 
-		// Check the similar email if it changed.
 		if user.Email != "" {
 			tx.Ascend("", func(key, value string) bool {
 				var existingUser models.User
@@ -233,11 +282,11 @@ func UpdateUser(c *fiber.Ctx) error {
 				return true
 			})
 			if emailExists {
+				logger.Warn("Another user with this email already exists", zap.String("email", user.Email))
 				return fiber.NewError(fiber.StatusConflict, "Another user with this email already exists")
 			}
 		}
 
-		// Update the user.
 		userData, err := json.Marshal(user)
 		if err != nil {
 			return err
@@ -249,6 +298,7 @@ func UpdateUser(c *fiber.Ctx) error {
 
 	if err != nil {
 		if err == buntdb.ErrNotFound {
+			logger.Warn("User not found", zap.String("user_id", id))
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "User not found",
 			})
@@ -258,17 +308,27 @@ func UpdateUser(c *fiber.Ctx) error {
 				"error": fiberError.Message,
 			})
 		}
+		logger.Error("Failed to update user", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.JSON(user)
+	responseUser := models.ResponseUser{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
+	logger.Info("User updated successfully", zap.String("user_id", user.ID))
+	return c.JSON(responseUser)
 }
 
 // DeleteUser handler deletes the user according to ID.
 func DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
+
+	logger.Info("Deleting user", zap.String("user_id", id))
 
 	err := database.DB.Update(func(tx *buntdb.Tx) error {
 		_, err := tx.Delete(id)
@@ -277,15 +337,18 @@ func DeleteUser(c *fiber.Ctx) error {
 
 	if err != nil {
 		if err == buntdb.ErrNotFound {
+			logger.Warn("User not found", zap.String("user_id", id))
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "User not found",
 			})
 		}
+		logger.Error("Failed to delete user", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
+	logger.Info("User deleted successfully", zap.String("user_id", id))
 	return c.JSON(fiber.Map{
 		"message": "User deleted",
 	})

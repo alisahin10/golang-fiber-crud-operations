@@ -154,3 +154,53 @@ $36
 64945186-272d-4589-894c-4c3b70a02584
 $169
 {"id":"64945186-272d-4589-894c-4c3b70a02584","name":"Aly Falcon","email":"alyfalcon@gmail.com","password":"$2a$10$QWkwsYy0MczlFxKksB/jxO1eB5tif1l5Rnx9sB1yVagNdRsilAQMW"}
+*2
+$3
+del
+$36
+64945186-272d-4589-894c-4c3b70a02584
+*3
+$3
+set
+$36
+e68cbb11-f9ff-46aa-b61e-3dc434b608fc
+$169
+{"id":"e68cbb11-f9ff-46aa-b61e-3dc434b608fc","name":"Aly Falcon","email":"alyfalcon@gmail.com","password":"$2a$10$osaxKLnloQ8adXSJchZTeuHtQhwMVlB0ro5m2u0cvU4Hgd.AaUKdW"}
+*3
+$3
+set
+$36
+f949904d-5043-4ac7-a600-465dd9a46ead
+$181
+{"id":"f949904d-5043-4ac7-a600-465dd9a46ead","name":"Abdullah Toraman","email":"abdullahtoraman@gmail.com","password":"$2a$10$ZwRLUJbYxRnBfGS5vXd3COMREd3r4.e2UW0YuXl6dLER6Lyq9EaiK"}
+*2
+$3
+del
+$36
+e68cbb11-f9ff-46aa-b61e-3dc434b608fc
+*3
+$3
+set
+$36
+4189d64f-22d4-478a-853f-055f1da5e8f8
+$168
+{"id":"4189d64f-22d4-478a-853f-055f1da5e8f8","name":"Ali Şahin","email":"alisahin@gmail.com","password":"$2a$10$szDM1QtujI5yKTM6a15kxeAXEgvfcQKQ9ThMTiEgsCvpVT5F8H6S2"}
+*3
+$3
+set
+$36
+4189d64f-22d4-478a-853f-055f1da5e8f8
+$168
+{"id":"4189d64f-22d4-478a-853f-055f1da5e8f8","name":"Ali Şahin","email":"alisahin@gmail.com","password":"$2a$10$viSP1fhq5e.gQ0Hn.1/iIO1k6zSW5zK7t2oXBGTcmaSVEGU0GKVqi"}
+*3
+$3
+set
+$36
+f6a4147b-7bdc-4c71-9daf-2b895635f07e
+$187
+{"id":"f6a4147b-7bdc-4c71-9daf-2b895635f07e","name":"Ergin Yorgancıoğlu","email":"enginyorgancioglu@gmail.com","password":"$2a$10$46m.28CAZOKqRBIhobUTE.T40uMzHI5epTyaf5GZ4nANAO0up3bMK"}
+*2
+$3
+del
+$36
+f6a4147b-7bdc-4c71-9daf-2b895635f07e
