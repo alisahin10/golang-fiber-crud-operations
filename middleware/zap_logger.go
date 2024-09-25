@@ -10,6 +10,7 @@ func ZapLoggerMiddleware(logger *zap.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
 
+		// Passes to the next handler and if there is no error then err will be nil.
 		err := c.Next()
 
 		stop := time.Now()

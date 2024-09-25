@@ -124,78 +124,7 @@ func (s *UserService) DeleteUser(id string) error {
 	return nil
 }
 
-/*
-// SearchUsers handles searching users by name or email.
-func (s *UserService) SearchUsers(query string) ([]models.ResponseUser, error) {
-	users, err := s.Repo.GetAllUsers()
-	if err != nil {
-		s.Logger.Error("Failed to search users", zap.Error(err))
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to fetch users")
-	}
-
-	var filteredUsers []models.ResponseUser
-	for _, user := range users {
-		if user.Name == query || user.Email == query {
-			filteredUsers = append(filteredUsers, models.ResponseUser{
-				ID:    user.ID,
-				Name:  user.Name,
-				Email: user.Email,
-			})
-		}
-	}
-
-	if len(filteredUsers) == 0 {
-		s.Logger.Warn("No users found for query", zap.String("query", query))
-		return nil, fiber.NewError(fiber.StatusNotFound, "No users found")
-	}
-
-	s.Logger.Info("Users found", zap.Int("count", len(filteredUsers)), zap.String("query", query))
-	return filteredUsers, nil
-}
-
-*/
-
-/*
-
-func (s *UserService) SearchUsers(query string) ([]models.ResponseUser, error) {
-	// Check if query is empty
-	if query == "" {
-		s.Logger.Warn("Search query is empty")
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Search query cannot be empty")
-	}
-
-	// Get all users from the repository
-	users, err := s.Repo.GetAllUsers()
-	if err != nil {
-		s.Logger.Error("Failed to fetch users", zap.Error(err))
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to fetch users")
-	}
-
-	// Prepare the filtered user list
-	var filteredUsers []models.ResponseUser
-	for _, user := range users {
-		// Search both name and email fields
-		if user.Name == query || user.Email == query {
-			filteredUsers = append(filteredUsers, models.ResponseUser{
-				ID:    user.ID,
-				Name:  user.Name,
-				Email: user.Email,
-			})
-		}
-	}
-
-	// If no users are found, log and return an error
-	if len(filteredUsers) == 0 {
-		s.Logger.Warn("No users found for query", zap.String("query", query))
-		return nil, fiber.NewError(fiber.StatusNotFound, "No users found")
-	}
-
-	s.Logger.Info("Users found", zap.Int("count", len(filteredUsers)), zap.String("query", query))
-	return filteredUsers, nil
-}
-
-*/
-
+// SearchUsersByNameOrEmail handles searching a user by their name or email.
 func (s *UserService) SearchUsersByNameOrEmail(nameQuery string, emailQuery string) ([]models.ResponseUser, error) {
 	users, err := s.Repo.GetAllUsers()
 	if err != nil {

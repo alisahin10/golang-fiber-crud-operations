@@ -27,19 +27,14 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		return utils.JSONErrorResponse(c, fiber.StatusBadRequest, "Invalid request payload")
 	}
 
-	// Delegate to the service layer.
+	// Service layer.
 	if err := h.Service.CreateUser(&user); err != nil {
-		h.Logger.Error("Failed to create user", zap.Error(err))
 		return utils.JSONErrorResponse(c, fiber.StatusInternalServerError, err.Error())
 	}
 
-	responseUser := models.ResponseUser{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
-	}
-	h.Logger.Info("User created successfully", zap.String("user_id", user.ID))
+	responseUser := utils.ToResponseUser(&user)
 	return c.Status(fiber.StatusCreated).JSON(responseUser)
+
 }
 
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
@@ -47,16 +42,10 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 
 	user, err := h.Service.GetUserByID(id)
 	if err != nil {
-		h.Logger.Error("Failed to get user by ID", zap.Error(err))
 		return utils.JSONErrorResponse(c, fiber.StatusNotFound, err.Error())
 	}
 
-	responseUser := models.ResponseUser{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
-	}
-
+	responseUser := utils.ToResponseUser(user)
 	h.Logger.Info("User retrieved successfully", zap.String("user_id", user.ID))
 	return c.JSON(responseUser)
 }
@@ -64,19 +53,10 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 	users, err := h.Service.GetAllUsers()
 	if err != nil {
-		h.Logger.Error("Failed to get all users", zap.Error(err))
 		return utils.JSONErrorResponse(c, fiber.StatusInternalServerError, err.Error())
 	}
 
-	var responseUsers []models.ResponseUser
-	for _, user := range users {
-		responseUsers = append(responseUsers, models.ResponseUser{
-			ID:    user.ID,
-			Name:  user.Name,
-			Email: user.Email,
-		})
-	}
-
+	responseUsers := utils.ToResponseUsers(users)
 	h.Logger.Info("All users retrieved successfully", zap.Int("count", len(users)))
 	return c.JSON(responseUsers)
 }
@@ -91,11 +71,9 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	if err := h.Service.UpdateUser(id, &updateData); err != nil {
-		h.Logger.Error("Failed to update user", zap.Error(err))
 		return utils.JSONErrorResponse(c, fiber.StatusInternalServerError, err.Error())
 	}
 
-	h.Logger.Info("User updated successfully", zap.String("user_id", id))
 	return c.JSON(fiber.Map{
 		"message": "User updated successfully",
 	})
@@ -105,58 +83,13 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	if err := h.Service.DeleteUser(id); err != nil {
-		h.Logger.Error("Failed to delete user", zap.Error(err))
 		return utils.JSONErrorResponse(c, fiber.StatusInternalServerError, err.Error())
 	}
 
-	h.Logger.Info("User deleted successfully", zap.String("user_id", id))
 	return c.JSON(fiber.Map{
 		"message": "User deleted successfully",
 	})
 }
-
-/*
-func (h *UserHandler) SearchUsers(c *fiber.Ctx) error {
-	query := c.Query("name")
-
-	users, err := h.Service.SearchUsers(query)
-	if err != nil {
-		h.Logger.Error("Failed to search users", zap.Error(err))
-		return utils.JSONErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-	}
-
-	if len(users) == 0 {
-		h.Logger.Warn("No users found for query", zap.String("query", query))
-		return utils.JSONErrorResponse(c, fiber.StatusNotFound, "No users found")
-	}
-
-	h.Logger.Info("Users found", zap.Int("count", len(users)))
-	return c.JSON(users)
-}
-
-*/
-/*
-func (h *UserHandler) SearchUsers(c *fiber.Ctx) error {
-	// Get the search query from the query parameter
-	query := c.Query("q")
-
-	// Call the service to perform the search
-	users, err := h.Service.SearchUsers(query)
-	if err != nil {
-		h.Logger.Error("Failed to search users", zap.Error(err))
-		return utils.JSONErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-	}
-
-	// If no users are found, return a 404
-	if len(users) == 0 {
-		h.Logger.Warn("No users found for query", zap.String("query", query))
-		return utils.JSONErrorResponse(c, fiber.StatusNotFound, "No users found")
-	}
-
-	h.Logger.Info("Users found", zap.Int("count", len(users)))
-	return c.JSON(users)
-}
-*/
 
 func (h *UserHandler) SearchUsers(c *fiber.Ctx) error {
 	// Retrieve both "name" and "email" query parameters
@@ -174,16 +107,8 @@ func (h *UserHandler) SearchUsers(c *fiber.Ctx) error {
 	// Call the service to perform the search based on name and/or email
 	users, err := h.Service.SearchUsersByNameOrEmail(nameQuery, emailQuery)
 	if err != nil {
-		h.Logger.Error("Failed to search users", zap.Error(err))
 		return utils.JSONErrorResponse(c, fiber.StatusInternalServerError, "Failed to search users")
 	}
-
-	// If no users are found, return no content
-	if len(users) == 0 {
-		h.Logger.Info("No users found matching the criteria", zap.String("name_query", nameQuery), zap.String("email_query", emailQuery))
-		return utils.JSONErrorResponse(c, fiber.StatusNoContent, "No users found matching the criteria")
-	}
-
-	h.Logger.Info("Users found", zap.Int("count", len(users)))
 	return c.JSON(users)
+
 }

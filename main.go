@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 )
@@ -17,11 +18,33 @@ import (
 var logger *zap.Logger
 
 func initLogger() {
-	var err error
-	logger, err = zap.NewProduction()
+	// Configure the JSON encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.TimeKey = "time"
+	encoderConfig.LevelKey = "level"
+	encoderConfig.NameKey = "logger"
+	encoderConfig.MessageKey = "message"
+	encoderConfig.StacktraceKey = "stacktrace"
+	encoderConfig.LineEnding = zapcore.DefaultLineEnding
+
+	// Create a new core
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.AddSync(getLogFile()), // Use the log file for output
+		zapcore.InfoLevel,
+	)
+
+	// Create a new logger with the core
+	logger = zap.New(core)
+}
+
+func getLogFile() *os.File {
+	// Create or open the log file
+	file, err := os.OpenFile("app_logs.json", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("Can't initialize zap logger: %v", err)
+		log.Fatalf("Can't open log file: %v", err)
 	}
+	return file
 }
 
 func main() {
@@ -66,7 +89,7 @@ func main() {
 	// Start the server using the port defined in the environment
 	port := os.Getenv("APP_PORT")
 	if port == "" {
-		port = "3000" // default to 3000 if APP_PORT is not set
+		port = "3000"
 	}
 
 	log.Fatal(app.Listen(":" + port))

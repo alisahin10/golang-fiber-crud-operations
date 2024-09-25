@@ -95,7 +95,7 @@ func (r *BuntDBUserRepository) CheckEmailExists(email string) (bool, error) {
 			var user models.User
 			if err := json.Unmarshal([]byte(value), &user); err == nil && user.Email == email {
 				exists = true
-				return false // stop iteration early
+				return false
 			}
 			return true
 		})
