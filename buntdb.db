@@ -204,3 +204,22 @@ $3
 del
 $36
 f6a4147b-7bdc-4c71-9daf-2b895635f07e
+*3
+$3
+set
+$36
+47b3ea09-e3fc-49ca-9e29-19121930d882
+$172
+{"id":"47b3ea09-e3fc-49ca-9e29-19121930d882","name":"Furkan Ünal","email":"furkanunal@gmail.com","password":"$2a$10$imftznYCjT2IwGLWnxkizOuylWrnIbELw.I9iPqjWn5jl3SfEBzuW"}
+*3
+$3
+set
+$36
+47b3ea09-e3fc-49ca-9e29-19121930d882
+$175
+{"id":"47b3ea09-e3fc-49ca-9e29-19121930d882","name":"Rıdvan Güzel","email":"ridvanguzel@gmail.com","password":"$2a$10$qtX2SxzfNQIZD6awW1UT7.PHId01I7ePG1uvjxeIhZ8gpYEWF1pC."}
+*2
+$3
+del
+$36
+4189d64f-22d4-478a-853f-055f1da5e8f8

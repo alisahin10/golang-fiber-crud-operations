@@ -1,18 +1,17 @@
 package database
 
 import (
+	"github.com/tidwall/buntdb"
 	"log"
 	"sync"
-
-	"github.com/tidwall/buntdb"
 )
 
 var (
 	DB   *buntdb.DB
-	once sync.Once // Opens the DB only once.
+	once sync.Once
 )
 
-// InitDB starts the db provide connection.
+// InitDB initializes the database.
 func InitDB() {
 	once.Do(func() {
 		var err error
@@ -23,7 +22,7 @@ func InitDB() {
 	})
 }
 
-// CloseDB closes the DB connection.
+// CloseDB closes the database connection.
 func CloseDB() {
 	if DB != nil {
 		DB.Close()

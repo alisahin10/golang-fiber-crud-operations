@@ -10,23 +10,17 @@ func ZapLoggerMiddleware(logger *zap.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
 
-		// Process request
 		err := c.Next()
 
-		// Log request details after processing
+		stop := time.Now()
+		latency := stop.Sub(start)
+
 		logger.Info("Request",
 			zap.String("method", c.Method()),
 			zap.String("path", c.Path()),
 			zap.Int("status", c.Response().StatusCode()),
-			zap.String("ip", c.IP()),
-			zap.String("user_agent", string(c.Request().Header.UserAgent())),
-			zap.Duration("latency", time.Since(start)),
+			zap.Duration("latency", latency),
 		)
-
-		// If there's an error, log it
-		if err != nil {
-			logger.Error("Request error", zap.Error(err))
-		}
 
 		return err
 	}

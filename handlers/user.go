@@ -1,36 +1,35 @@
 package handlers
 
 import (
-	"Fiber/database"
 	"Fiber/models"
-	"encoding/json"
+	"Fiber/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/tidwall/buntdb"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
-	"strings"
 )
 
-var logger *zap.Logger
-
-func SetLogger(l *zap.Logger) {
-	logger = l
+type UserHandler struct {
+	Repo   repository.UserRepository
+	Logger *zap.Logger
 }
 
-// CreateUser handler creates a new user.
-func CreateUser(c *fiber.Ctx) error {
+func NewUserHandler(repo repository.UserRepository, logger *zap.Logger) *UserHandler {
+	return &UserHandler{Repo: repo, Logger: logger}
+}
+
+func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
-		logger.Error("Failed to parse body", zap.Error(err))
+		h.Logger.Error("Failed to parse body", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
-	logger.Info("Creating new user...", zap.String("email", user.Email))
+	h.Logger.Info("Creating new user...", zap.String("email", user.Email))
 
-	// Input check.
+	// Input validation
 	if user.Email == "" || user.Name == "" || user.Password == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Missing required fields",
@@ -40,220 +39,120 @@ func CreateUser(c *fiber.Ctx) error {
 	// UUID creation
 	user.ID = uuid.New().String()
 
-	// Password hashing.
+	// Password hashing
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to hash password",
 		})
 	}
-
 	user.Password = string(hashedPassword)
 
-	// Email verification.
-	var emailExists bool
-	database.DB.View(func(tx *buntdb.Tx) error {
-		tx.Ascend("", func(key, value string) bool {
-			var existingUser models.User
-			if err := json.Unmarshal([]byte(value), &existingUser); err != nil {
-				return true
-			}
-			if existingUser.Email == user.Email {
-				emailExists = true
-				return false
-			}
-			return true
+	// Check if email exists
+	exists, err := h.Repo.CheckEmailExists(user.Email)
+	if err != nil {
+		h.Logger.Error("Failed to check email existence", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal server error",
 		})
-		return nil
-	})
-
-	if emailExists {
+	}
+	if exists {
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 			"error": "User with this email already exists",
 		})
 	}
 
-	// Add user to database.
-	userData, err := json.Marshal(user)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to marshal user data",
-		})
-	}
-
-	err = database.DB.Update(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(user.ID, string(userData), nil)
-		return err
-	})
-
-	if err != nil {
+	// Create user in the repository
+	if err := h.Repo.CreateUser(&user); err != nil {
+		h.Logger.Error("Failed to create user", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create user",
 		})
 	}
 
-	// User response to hide password from client side.
+	// Remove password for the response
 	responseUser := models.ResponseUser{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
 	}
 
-	logger.Info("User created successfully", zap.String("user_id", user.ID))
+	h.Logger.Info("User created successfully", zap.String("user_id", user.ID))
 	return c.Status(fiber.StatusCreated).JSON(responseUser)
 }
 
-// ReadUser handler displays the user with the related ID.
-func ReadUser(c *fiber.Ctx) error {
+func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var user models.User
-
-	logger.Info("Reading user", zap.String("user_id", id))
-
-	err := database.DB.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(id)
-		if err != nil {
-			return err
-		}
-		return json.Unmarshal([]byte(val), &user)
-	})
-
-	// Error handling.
+	user, err := h.Repo.GetUserByID(id)
 	if err != nil {
-		if err == buntdb.ErrNotFound {
-			logger.Warn("User not found", zap.String("user_id", id))
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		logger.Error("Failed to retrieve user", zap.Error(err))
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
+		h.Logger.Error("Failed to get user by ID", zap.Error(err))
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
 		})
 	}
 
-	// User response to hide password from client side.
+	// Remove password from the response
 	responseUser := models.ResponseUser{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
 	}
 
-	logger.Info("User retrieved successfully", zap.String("user_id", user.ID))
+	h.Logger.Info("User retrieved successfully", zap.String("user_id", user.ID))
 	return c.JSON(responseUser)
 }
 
-// GetAllUsers handler retrieves all users.
-func GetAllUsers(c *fiber.Ctx) error {
-	logger.Info("Retrieving all users")
-
-	var responseUsers []models.ResponseUser
-
-	err := database.DB.View(func(tx *buntdb.Tx) error {
-		return tx.Ascend("", func(key, value string) bool {
-			var user models.User
-			if err := json.Unmarshal([]byte(value), &user); err != nil {
-				return true
-			}
-			responseUsers = append(responseUsers, models.ResponseUser{
-				ID:    user.ID,
-				Name:  user.Name,
-				Email: user.Email,
-			})
-			return true
-		})
-	})
-
+func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
+	users, err := h.Repo.GetAllUsers()
 	if err != nil {
-		logger.Error("Failed to retrieve users", zap.Error(err))
+		h.Logger.Error("Failed to get all users", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve users",
-		})
-	}
-
-	logger.Info("Users retrieved successfully", zap.Int("count", len(responseUsers)))
-	return c.JSON(responseUsers)
-}
-
-// SearchUsers handler searches users according to name or email.
-func SearchUsers(c *fiber.Ctx) error {
-	nameQuery := c.Query("name")
-	emailQuery := c.Query("email")
-
-	logger.Info("Searching users", zap.String("name_query", nameQuery), zap.String("email_query", emailQuery))
-
-	if nameQuery == "" && emailQuery == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "At least one query parameter (name or email) is required",
+			"error": "Failed to fetch users",
 		})
 	}
 
 	var responseUsers []models.ResponseUser
-
-	err := database.DB.View(func(tx *buntdb.Tx) error {
-		return tx.Ascend("", func(key, value string) bool {
-			var user models.User
-			if err := json.Unmarshal([]byte(value), &user); err != nil {
-				return true
-			}
-
-			if nameQuery != "" && strings.Contains(strings.ToLower(user.Name), strings.ToLower(nameQuery)) {
-				responseUsers = append(responseUsers, models.ResponseUser{
-					ID:    user.ID,
-					Name:  user.Name,
-					Email: user.Email,
-				})
-			} else if emailQuery != "" && strings.Contains(strings.ToLower(user.Email), strings.ToLower(emailQuery)) {
-				responseUsers = append(responseUsers, models.ResponseUser{
-					ID:    user.ID,
-					Name:  user.Name,
-					Email: user.Email,
-				})
-			}
-
-			return true
-		})
-	})
-
-	if err != nil {
-		logger.Error("Failed to search users", zap.Error(err))
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to search users",
+	for _, user := range users {
+		responseUsers = append(responseUsers, models.ResponseUser{
+			ID:    user.ID,
+			Name:  user.Name,
+			Email: user.Email,
 		})
 	}
 
-	if len(responseUsers) == 0 {
-		logger.Info("No users found matching the criteria", zap.String("name_query", nameQuery), zap.String("email_query", emailQuery))
-		return c.Status(fiber.StatusNoContent).JSON(fiber.Map{
-			"message": "No users found matching the criteria",
-		})
-	}
-
-	logger.Info("Users found", zap.Int("count", len(responseUsers)))
+	h.Logger.Info("All users retrieved successfully")
 	return c.JSON(responseUsers)
 }
 
-// UpdateUser handler updates the user according to ID.
-func UpdateUser(c *fiber.Ctx) error {
+func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	logger.Info("Updating user", zap.String("user_id", id))
-
-	var user models.User
-	if err := c.BodyParser(&user); err != nil {
-		logger.Error("Failed to parse body", zap.Error(err))
+	var updateData models.User
+	if err := c.BodyParser(&updateData); err != nil {
+		h.Logger.Error("Failed to parse body", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
-	user.ID = id
+	user, err := h.Repo.GetUserByID(id)
+	if err != nil {
+		h.Logger.Error("Failed to get user by ID for update", zap.Error(err))
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
 
-	if user.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	// Update fields
+	user.Name = updateData.Name
+	user.Email = updateData.Email
+
+	// If password is provided, hash it
+	if updateData.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updateData.Password), bcrypt.DefaultCost)
 		if err != nil {
-			logger.Error("Failed to hash password", zap.Error(err))
+			h.Logger.Error("Failed to hash password", zap.Error(err))
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to hash password",
 			})
@@ -261,95 +160,64 @@ func UpdateUser(c *fiber.Ctx) error {
 		user.Password = string(hashedPassword)
 	}
 
-	var emailExists bool
-
-	err := database.DB.Update(func(tx *buntdb.Tx) error {
-		_, err := tx.Get(id)
-		if err != nil {
-			return err
-		}
-
-		if user.Email != "" {
-			tx.Ascend("", func(key, value string) bool {
-				var existingUser models.User
-				if err := json.Unmarshal([]byte(value), &existingUser); err != nil {
-					return true
-				}
-				if existingUser.Email == user.Email && existingUser.ID != id {
-					emailExists = true
-					return false
-				}
-				return true
-			})
-			if emailExists {
-				logger.Warn("Another user with this email already exists", zap.String("email", user.Email))
-				return fiber.NewError(fiber.StatusConflict, "Another user with this email already exists")
-			}
-		}
-
-		userData, err := json.Marshal(user)
-		if err != nil {
-			return err
-		}
-
-		_, _, err = tx.Set(id, string(userData), nil)
-		return err
-	})
-
-	if err != nil {
-		if err == buntdb.ErrNotFound {
-			logger.Warn("User not found", zap.String("user_id", id))
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		if fiberError, ok := err.(*fiber.Error); ok {
-			return c.Status(fiberError.Code).JSON(fiber.Map{
-				"error": fiberError.Message,
-			})
-		}
-		logger.Error("Failed to update user", zap.Error(err))
+	// Update user in the repository
+	if err := h.Repo.UpdateUser(user); err != nil {
+		h.Logger.Error("Failed to update user", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
+			"error": "Failed to update user",
 		})
 	}
 
-	responseUser := models.ResponseUser{
-		ID:    user.ID,
-		Name:  user.Name,
-		Email: user.Email,
-	}
-
-	logger.Info("User updated successfully", zap.String("user_id", user.ID))
-	return c.JSON(responseUser)
+	h.Logger.Info("User updated successfully", zap.String("user_id", user.ID))
+	return c.JSON(fiber.Map{
+		"message": "User updated successfully",
+	})
 }
 
-// DeleteUser handler deletes the user according to ID.
-func DeleteUser(c *fiber.Ctx) error {
+func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	logger.Info("Deleting user", zap.String("user_id", id))
-
-	err := database.DB.Update(func(tx *buntdb.Tx) error {
-		_, err := tx.Delete(id)
-		return err
-	})
-
-	if err != nil {
-		if err == buntdb.ErrNotFound {
-			logger.Warn("User not found", zap.String("user_id", id))
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		logger.Error("Failed to delete user", zap.Error(err))
+	if err := h.Repo.DeleteUser(id); err != nil {
+		h.Logger.Error("Failed to delete user", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
+			"error": "Failed to delete user",
 		})
 	}
 
-	logger.Info("User deleted successfully", zap.String("user_id", id))
+	h.Logger.Info("User deleted successfully", zap.String("user_id", id))
 	return c.JSON(fiber.Map{
-		"message": "User deleted",
+		"message": "User deleted successfully",
 	})
+}
+
+func (h *UserHandler) SearchUsers(c *fiber.Ctx) error {
+	query := c.Query("q")
+
+	users, err := h.Repo.GetAllUsers()
+	if err != nil {
+		h.Logger.Error("Failed to search users", zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch users",
+		})
+	}
+
+	var filteredUsers []models.ResponseUser
+	for _, user := range users {
+		if user.Name == query || user.Email == query {
+			filteredUsers = append(filteredUsers, models.ResponseUser{
+				ID:    user.ID,
+				Name:  user.Name,
+				Email: user.Email,
+			})
+		}
+	}
+
+	if len(filteredUsers) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "No users found",
+		})
+	}
+
+	h.Logger.Info("Users found", zap.Int("count", len(filteredUsers)))
+	return c.JSON(filteredUsers)
 }
