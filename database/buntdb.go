@@ -11,11 +11,11 @@ var (
 	once sync.Once
 )
 
-// InitDB initializes the database.
-func InitDB() {
+// InitDB initializes the BuntDB database with the given path.
+func InitDB(dbPath string) {
 	once.Do(func() {
 		var err error
-		DB, err = buntdb.Open("./buntdb.db") // DB file location.
+		DB, err = buntdb.Open(dbPath) // Use the provided database path.
 		if err != nil {
 			log.Fatal(err)
 		}

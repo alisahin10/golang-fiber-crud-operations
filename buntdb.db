@@ -223,3 +223,74 @@ $3
 del
 $36
 4189d64f-22d4-478a-853f-055f1da5e8f8
+*3
+$3
+set
+$36
+1cdadd8b-f5e1-4049-ac4d-8b82f73853ab
+$172
+{"id":"1cdadd8b-f5e1-4049-ac4d-8b82f73853ab","name":"Furkan Ünal","email":"furkanunal@gmail.com","password":"$2a$10$QHGxNC4jIhlejf3439NteOqHLobZkwLmstzsqUNRLyZCPojU7HoMi"}
+*3
+$3
+set
+$36
+cd7e13d5-d13a-4af0-8bf0-a6385e46cde0
+$172
+{"id":"cd7e13d5-d13a-4af0-8bf0-a6385e46cde0","name":"Ahmet Aktaş","email":"ahmetaktas@gmail.com","password":"$2a$10$jpGX/h5qq98IVp98v/I/T.tObDGXp9LEyjCqJOT/0JdOQQsIYXPoG"}
+*3
+$3
+set
+$36
+8004cce6-b771-4c50-be00-b48673671405
+$173
+{"id":"8004cce6-b771-4c50-be00-b48673671405","name":"Mustafa Kurt","email":"mustafakurt@gmail.com","password":"$2a$10$bbY9Jko8UVF0/iYBV6BQ.OxnFSx0Jnuc33A0/Dtga8VCc.9y9Mqr."}
+*3
+$3
+set
+$36
+6a3e49a6-5628-4608-8c3e-369a26838139
+$167
+{"id":"6a3e49a6-5628-4608-8c3e-369a26838139","name":"Ayşe Taş","email":"aysetas@gmail.com","password":"$2a$10$2a/TaBsqFA6b449aKsS6uOPx4ZVhJYWI9AzAL7yHwLp8QwjMLDXv6"}
+*3
+$3
+set
+$36
+6a3e49a6-5628-4608-8c3e-369a26838139
+$172
+{"id":"6a3e49a6-5628-4608-8c3e-369a26838139","name":"Ayşe Kaplan","email":"aysekaplan@gmail.com","password":"$2a$10$16Lfe3f7SEmnenKWEQsTqOtlVABPROx31.0K7aOJWU7D306UU8D3e"}
+*2
+$3
+del
+$36
+6a3e49a6-5628-4608-8c3e-369a26838139
+*3
+$3
+set
+$36
+1d7a142c-2dee-42b4-b2a2-147577caaf78
+$174
+{"id":"1d7a142c-2dee-42b4-b2a2-147577caaf78","name":"Fatma Kılıç","email":"fatmakilic@gmail.com","password":"$2a$10$H2Y4Bi1Wl7.2v/XmLRlU4egmfzAyYgkK7GhbVFo5qniCUwxd.QSta"}
+*3
+$3
+set
+$36
+1cdadd8b-f5e1-4049-ac4d-8b82f73853ab
+$173
+{"id":"1cdadd8b-f5e1-4049-ac4d-8b82f73853ab","name":"Furkan Soylu","email":"furkansoylu@gmail.com","password":"$2a$10$oRmlkcHagP4Sq2JsjwpdOOo5rGSiHfPy0TvRQXGG6WgLn7uvTPbSq"}
+*2
+$3
+del
+$36
+1d7a142c-2dee-42b4-b2a2-147577caaf78
+*3
+$3
+set
+$36
+5da1cffd-f397-4e9a-be78-adff83c4d7da
+$172
+{"id":"5da1cffd-f397-4e9a-be78-adff83c4d7da","name":"Zehra Yiğit","email":"zehrayigit@gmail.com","password":"$2a$10$p1aOFk1U/GWiD/B8ZF5ELeOntBXXTQ7VhVUKEt0W8vEp1650Nt8LO"}
+*2
+$3
+del
+$36
+5da1cffd-f397-4e9a-be78-adff83c4d7da
